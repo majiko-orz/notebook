@@ -89,6 +89,9 @@ $ git config -e [--global]
 # 设置提交代码时的用户信息
 $ git config [--global] user.name "[name]"
 $ git config [--global] user.email "[email address]"
+
+# 查看配置文件位置及内容
+$ git config --list --show-origin
 ```
 
 ## 增加/删除文件
