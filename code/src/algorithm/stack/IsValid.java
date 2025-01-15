@@ -1,4 +1,4 @@
-package stack;
+package algorithm.stack;
 
 import java.util.Deque;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package string;
+package algorithm.string;
 
 /**
  * 最后一个单词的长度

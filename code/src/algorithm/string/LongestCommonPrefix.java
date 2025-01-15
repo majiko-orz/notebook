@@ -1,4 +1,4 @@
-package string;
+package algorithm.string;
 
 /**
  * 最长公共前缀

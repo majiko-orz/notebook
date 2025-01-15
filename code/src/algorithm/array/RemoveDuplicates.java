@@ -1,4 +1,4 @@
-package array;
+package algorithm.array;
 
 /**
  * 删除有序数组中的重复项

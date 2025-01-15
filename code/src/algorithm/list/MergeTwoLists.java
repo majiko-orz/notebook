@@ -1,4 +1,4 @@
-package list;
+package algorithm.list;
 
 /**
  * 合并两个有序链表

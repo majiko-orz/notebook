@@ -1,4 +1,4 @@
-package array;
+package algorithm.array;
 
 /**
  * 移除元素

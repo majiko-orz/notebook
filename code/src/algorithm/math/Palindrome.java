@@ -1,4 +1,4 @@
-package math;
+package algorithm.math;
 
 /**
  * 回文数

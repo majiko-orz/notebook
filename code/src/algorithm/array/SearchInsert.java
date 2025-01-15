@@ -1,4 +1,4 @@
-package array;
+package algorithm.array;
 
 /**
  * 搜索插入位置
