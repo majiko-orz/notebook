@@ -2359,3 +2359,4 @@ Stream的中间操作
 | sorted(Comparator com) | 产生一个新流，其中按比较器顺序排序 |
 
 4.匹配与查找
+

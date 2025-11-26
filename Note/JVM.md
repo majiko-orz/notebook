@@ -1154,6 +1154,8 @@ JDK9引入了AOT编译器（静态提前编译器，Ahead Of Time Compiler），
 
 #### intern()的使用
 
+https://tech.meituan.com/2014/03/06/in-depth-understanding-string-intern.html
+
 如果不是用双引号声明的String对象，可以使用String提供的intern方法：intern方法会从字符串常量池中查询当前字符串是否存在，若不存在就会将当前字符串放入常量池中
 
 + jdk1.6中，将这个字符串对象尝试放入串池
