@@ -3,7 +3,7 @@ package algorithm;
 import java.util.Arrays;
 
 /**
- * 冒泡排序、选择排序、插入排序、希尔排序、归并排序、快速排序
+ * 冒泡排序、选择排序、插入排序、希尔排序、归并排序、快速排序、堆排序
  */
 public class SortAlgorithm {
 
@@ -14,68 +14,72 @@ public class SortAlgorithm {
         Arrays.stream(a).forEach(e -> System.out.print(e + " "));
     }
 
-    //冒泡排序
+    // 1、冒泡排序
     public static void bubbleSort(int[] a) {
         for (int i = 0; i < a.length - 1; i++) {
             for (int j = 0; j < a.length - i - 1; j++) {
                 if (a[j] > a[j + 1]) {
-                    int temp = a[j];
-                    a[j] = a[j + 1];
-                    a[j + 1] = temp;
+                    exch(a, j, j+ 1);
                 }
             }
         }
     }
 
-    //选择排序
+    // 2、选择排序
     public static void selectSort(int[] a) {
-        for (int i = 0; i < a.length; i++) {
-            int min = i;
-            for (int j = i + 1; j < a.length; j++) {
-                if (a[min] > a[j]) {
-                    min = j;
+        for (int i = a.length - 1; i > 0; i--) {
+            int max = i;
+            for (int j = 0; j < i; j++) {
+                if (a[j] > a[max]) {
+                    max = j;
                 }
             }
-            int temp = a[i];
-            a[i] = a[min];
-            a[min] = temp;
+            exch(a, i, max);
         }
     }
 
-    //插入排序
+    // 3、插入排序
     public static void insertSort(int[] a) {
-        for (int i = 1; i < a.length; i++) {
-            for (int j = i; j > 0 && a[j] < a[j - 1]; j--) {
-                int temp = a[j];
-                a[j] = a[j - 1];
-                a[j - 1] = temp;
+        for(int low = 1; low < a.length; low++) {
+            int t = a[low];
+            int i = low - 1;
+            while(i >= 0 && t < a[i]) {
+                a[i + 1] = a[i];
+                i--;
+            }
+            if(i != low - 1) {
+                a[i + 1] = t;
             }
         }
     }
 
-    //希尔排序
+    // 4、希尔排序
     public static void shellSort(int[] a) {
-        int step = a.length / 2;
-        while (step > 0) {
-            for (int i = step; i < a.length; i++) {
-                for (int j = i; j - step >= 0 && a[j] < a[j - step]; j -= step) {
-                    int temp = a[j];
-                    a[j] = a[j - step];
-                    a[j - step] = temp;
+        for(int gap = a.length >> 1; gap >= 1; gap = gap >> 1) {
+            for(int low = gap; low < a.length; low++) {
+                int t = a[low];
+                int i = low - gap;
+                while(i >= 0 && t < a[i]) {
+                    a[i + gap] = a[i];
+                    i -= gap;
+                }
+                if(i != low - gap) {
+                    a[i + gap] = t;
                 }
             }
-            step = step / 2;
         }
     }
 
-    //归并排序,自顶向下
+    // 5、归并排序,自顶向下
     public static void mergeSort(int[] a) {
         int[] aux = new int[a.length];
         mergeSort(a, 0, a.length - 1, aux);
     }
 
     public static void mergeSort(int[] a, int lo, int hi, int[] aux) {
-        if (hi <= lo) return;
+        if (hi <= lo) {
+            return;
+        }
         int mid = lo + (hi - lo) / 2;
         mergeSort(a, lo, mid, aux);
         mergeSort(a, mid + 1, hi, aux);
@@ -84,69 +88,120 @@ public class SortAlgorithm {
 
     public static void merge(int[] a, int lo, int mid, int hi, int[] aux) {
         int i = lo, j = mid + 1;
-        for (int k = lo; k <= hi; k++) aux[k] = a[k];
         for (int k = lo; k <= hi; k++) {
-            if (i > mid) a[k] = aux[j++];
-            else if (j > hi) a[k] = aux[i++];
-            else if (aux[j] < aux[i]) a[k] = aux[j++];
-            else a[k] = aux[i++];
+            aux[k] = a[k];
+        }
+        for (int k = lo; k <= hi; k++) {
+            if (i > mid) {
+                a[k] = aux[j++];
+            } else if (j > hi) {
+                a[k] = aux[i++];
+            } else if (aux[j] < aux[i]) {
+                a[k] = aux[j++];
+            } else {
+                a[k] = aux[i++];
+            }
         }
     }
 
-    //归并排序,自底向上
+    // 归并排序,自底向上
     public static void mergeSort2(int[] a) {
         int N = a.length;
         int[] aux = new int[N];
-        for (int sz = 1; sz < N; sz += sz)
-            for (int lo = 0; lo < N - sz; lo += sz + sz)
+        for (int sz = 1; sz < N; sz += sz) {
+            for (int lo = 0; lo < N - sz; lo += sz + sz) {
                 merge(a, lo, lo + sz - 1, Math.min(lo + sz + sz - 1, N - 1), aux);
+            }
+        }
     }
 
-    //快速排序
+    // 6、快速排序
     public static void quickSort(int[] a) {
         quickSort(a, 0, a.length - 1);
     }
 
-    public static void quickSort(int[] a, int lo, int hi) {
-        if (hi <= lo) return;;
-        int j = partition(a, lo, hi);
-        quickSort(a, lo, j - 1);
-        quickSort(a, j + 1, hi);
-    }
-
-    public static int partition(int[] a, int lo, int hi) {
-        int i = lo, j = hi + 1;
-        int v = a[lo];
-        while (true) {
-            while (a[++i] < v) if (i == hi) break;
-            while (v < a[--j]) if (j == lo) break;
-            if (i >= j) break;
-            int temp = a[i];
-            a[i] = a[j];
-            a[j] = temp;
+    private static void quickSort(int[] a, int l, int r) {
+        if (l >= r) {
+            return;
         }
-        int temp = a[lo];
-        a[lo] = a[j];
-        a[j] = temp;
-        return j;
+        int p = partition(a, l, r);
+        quickSort(a, l, p - 1);
+        quickSort(a, p + 1, r);
     }
 
-    //三向切分的快速排序
+    private static int partition(int[] a, int l, int r) {
+        int v = a[l];
+        int i = l, j = r;
+        while (i < j) {
+            while (a[j] > v && i < j) {
+                j--;
+            }
+            while (a[i] <= v && i < j) {
+                i++;
+            }
+            exch(a, i, j);
+        }
+        exch(a, l, i);
+        return i;
+    }
+
+    // 三向切分的快速排序
     public static void quickSort2(int a[]) {
         quickSort3(a, 0, a.length - 1);
     }
 
     public static void quickSort3(int[] a, int lo, int hi) {
-        if (hi <= lo) return;
+        if (hi <= lo) {
+            return;
+        }
         int lt = lo, i = lo + 1, gt = hi;
         int v = a[lo];
         while (i <= gt) {
-            if (a[i] < v) exch(a, lt++, i++);
-            else if (a[i] > v) exch(a, i, gt--);
-            else i++;
+            if (a[i] < v) {
+                exch(a, lt++, i++);
+            } else if (a[i] > v) {
+                exch(a, i, gt--);
+            } else {
+                i++;
+            }
         }
         quickSort3(a, lo, lt - 1);
         quickSort3(a, gt + 1, hi);
+    }
+
+    // 7、堆排序
+    public void heapSort(int[] a) {
+        heapify(a, a.length);
+        for(int right = a.length - 1; right > 0; right--) {
+            exch(a, 0, right);
+            down(a, 0, right);
+        }
+    }
+
+    public void heapify(int[] array, int size) {
+        // 找到最后一个非叶子节点 size / 2 - 1
+        for(int i = size / 2 - 1; i >= 0; i--) {
+            down(array, i, size);
+        }
+    }
+
+    public void down(int[] array, int parent, int size) {
+        while(true) {
+            int left = parent * 2 + 1;
+            int right = left + 1;
+            int max = parent;
+            if(left < size && array[left] > array[max]) {
+                max = left;
+            }
+            if(right < size && array[right] > array[max]) {
+                max = right;
+            }
+            if(max == parent) { // 没找到更大的孩子
+                break;
+            }
+            exch(array, max, parent);
+            parent = max;
+        }
     }
 
     public static void exch(int[] a, int i, int j) {
@@ -155,7 +210,7 @@ public class SortAlgorithm {
         a[j] = temp;
     }
 
-    //
+    // 自测
     public static void sort(int a[]) {
 
     }

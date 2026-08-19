@@ -2761,8 +2761,6 @@ static final class NonfairSync extends Sync{
 }
 ```
 
-
-
 **可打断模式**
 
 ```java

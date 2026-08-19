@@ -95,3 +95,206 @@ Hystrix是一个用于分布式系统的延迟和容错的开源库，在分布�
 为微服务架构中的微服务提供集中化的外部配置支持，配置服务器为各个不同微服务应用的所有环境提供了一个中心化的外部配置
 
 ### SpringCloud Alibaba
+
+### Seata
+
+seata事务管理中有3个重要的角色：
+
++ TC（Transaction Coordinator）事务协调者：维护全局和分支事务的状态，协调全局事务提交和回滚
++ TM（Transaction Manager）事务管理器：定义全局事务的范围、开始全局事务、提交或回滚全局事务
++ RM（Resource Manager）资源管理器：管理分支事务处理的资源，与TC交谈以注册分支事务和报告分支事务的状态，并驱动分支事务提交或回滚
+
+seata提供了四种不同的分布式事务解决方案：
+
++ XA模式：强一致性分阶段事务模式，牺牲了一定的可用性，无业务侵入
++ TCC模式：最终一致性的分阶段事务模式，有业务侵入
++ AT模式：最终一致性的分阶段事务模式，无业务侵入，也是seata默认的模式
++ SAGA模式：长事务模式，有业务侵入
+
+![](/img/seata_7.png)
+
+#### XA模式
+
+XA规范是X/Open组织定义的分布式事务处理（DTP，Distributed Transaction Processing）标准，XA规范描述了全局的TM与局部的RM之间的接口，几乎所有主流的数据库都对XA规范提供了支持
+
+![](/img/seata_1.png)
+
+![](/img/seata_2.png)
+
+**seata的XA模式**
+
+seata的XA模式做了一些调整，但大体相似
+
+![](/img/seata_3.png)
+
+RM一阶段的工作：
+
++ 注册分支事务到TC
++ 执行分支业务sql但不提交
++ 报告执行状态到TC
+
+TC二阶段的工作
+
++ TC检测各分支事务执行状态
+  + 如果都成功，通知所有RM提交事务
+  + 如果有失败，通知所有RM回滚事务
+
+RM二阶段的工作
+
++ 接收TC指令，提交或回滚事务
+
+XA模式优点：
+
++ 事务强一致性，满足ACID原则
++ 常用的数据库都支持，实现简单，并且没有代码侵入
+
+XA模式缺点：
+
++ 因为一阶段需要锁定数据库资源，等待二阶段结束才释放，性能较差
++ 依赖关系型数据库实现事务
+
+**实现XA模式**
+
+1. 修改application.yml文件（每个参与事务的微服务），开启XA模式
+
+   ```yaml
+   seata:
+     data-source-proxy-mode: XA # 开启数据源代理的XA模式
+   ```
+
+2. 给发起全局事务的入口方法添加@GlobalTransactional注解，本例中是OrderServiceImpl中的create方法
+
+   ```java
+   @GlobalTransactional
+   public Long create(Order order) {
+       // 创建订单
+       orderMapper.insert(order);
+       // 扣余额
+       // 扣减库存
+       return order.getId();
+   }
+   ```
+
+3. 重启服务并测试
+
+#### AT模式
+
+AT模式同样是分阶段提交的事务模型，不过弥补了XA模型中资源锁定周期过长的缺陷
+
+![](/img/seata_4.png)
+
+阶段一RM的工作：
+
++ 注册分支事务
++ 记录undo-log（数据快照）
++ 执行业务sql并提交
++ 报告事务状态
+
+阶段二提交时RM的工作：
+
++ 删除undo-log即可
+
+阶段二回滚时RM的工作
+
++ 根据undo-log恢复数据到更新前
+
+AT模式和XA模式区别：
+
++ XA模式一阶段不提交事务，锁定资源；AT模式一阶段直接提交，不锁定资源
++ XA模式依赖数据库机制实现回滚；AT模式利用数据快照实现数据回滚
++ XA模式强一致性；AT模式最终一致性
+
+AT模式的优点：
+
++ 一阶段完成直接提交事务，释放数据库资源，性能比较好
++ 利用全局锁实现读写隔离
++ 没有代码侵入，框架自动完成回滚和提交
+
+AT模式的缺点：
+
++ 两阶段之间属于软状态，属于最终一致
++ 框架的快照功能会影响性能，但比XA模型要好很多
+
+**实现AT模式**
+
+AT模式中的快照生成、回滚等动作都是由框架自动完成，没有任何代码侵入，因此实现非常简单
+
+1. 导入seata-at.sql，其中lock_table导入到TC服务关联的数据库，undo_log表导入到微服务相关的数据库
+
+2. 修改application.yml文件，将事务模式修改为AT模式即可
+
+   ```yaml
+   seata:
+     data-source-proxy-mode: AT # 开启数据源代理的AT模式
+   ```
+
+3. 重启服务并测试
+
+#### TCC模式
+
+TCC模式与AT模式非常相似，每阶段都是独立事务，不同的是TCC通过人工编码来实现数据恢复。需要实现三个方法：
+
++ Try：资源的检测和预留
++ Confirm：完成资源操作业务；要求Try成功Confirm一定要能成功
++ Cancel：预留资源释放，可以理解为try的反向操作
+
+![](/img/seata_5.png)
+
+TCC的优点：
+
++ 一阶段完成直接提交事务，释放数据库资源，性能好
++ 相比AT模型，无需生成快照，无需使用全局锁，性能最强
++ 不依赖数据库事务，而是依赖补偿操作，可以用于非事务型数据库
+
+TCC的缺点：
+
++ 有代码侵入，需要人为编写try、Confirm和Cancel接口，太麻烦
++ 软状态，事务是最终一致性
++ 需要考虑Confirm和Cancel的失败情况，做好幂等处理
+
+**TCC的空回滚和业务悬挂**
+
+当某分支事务的try阶段阻塞时，可能导致全局事务超时而触发二阶段的cancel操作。在未执行try操作时先执行了cancel操作，这时cancel不能做回滚，就是空回滚
+
+对于已经空回滚的业务，如果以后继续执行try，就永远不可能confirm或cancel，这就是业务悬挂。应当阻止执行空回滚后的try操作，避免悬挂
+
+![](/img/seata_6.png)。
+
+**实现TCC模式**
+
+TCC的Try、Confirm、Cancel方法都需要在接口中基于注解来声明，语法如下
+
+```java
+@LocalTCC
+public interface TCCService {
+    // Try逻辑，@TwoPhaseBusinessAction中的name属性要与当前方法名一致，用于指定Try逻辑对应的方法
+    @TwoPhaseBusinessAction(name = "prepare", commitMethod = "confirm", rollbackMethod = "cancel")
+    void prepare(@BusinessActionContextParameter(paramName = "param") String param);
+    
+    // 二阶段confirm确认方法，可以另命名，但要保证与commitMethod一致
+    // context上下文，可以传递try方法的参数
+    boolean confirm(BusinessActionContext context);
+    
+    // 二阶段回滚方法，要保证与rollbackMethod一致
+    boolean cancel(BusinessActionContext context);
+}
+```
+
+#### Saga模式
+
+Saga模式是Seata提供的长事务解决方案。也分为两个阶段：
+
++ 一阶段：直接提交本地事务
++ 二阶段：成功则什么都不做；失败则通过编写补偿业务来回滚
+
+优点：
+
++ 事务参与者可以基于事件驱动实现异步调用，吞吐高
++ 一阶段直接提交事务，无锁，性能好
++ 不用编写TCC中的三个阶段，实现简单
+
+缺点：
+
++ 软状态持续时间不确定，时效性差
++ 没有锁，没有事务隔离，会有脏写
+

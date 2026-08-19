@@ -1,3 +1,5 @@
+Vue是一个用于构建用户界面的渐进式框架
+
 **VUE特点**
 
 1. 采用组件化模式，提高代码复用率、且让代码更好维护
@@ -97,7 +99,7 @@
 
 1. 单项绑定（v-bind）：数据只能从data流向页面
 
-2. 双向绑定（v-model）：数据不仅能从data流向页面，还可以从页面流向data
+2. 双向绑定（v-model）：数据不仅能从data流向页面，还可以从页面流向data，本质是value属性和input事件的合写
 
    备注：
 
@@ -128,6 +130,22 @@
     </script>
 </body>
 ```
+
+3. .sync修饰符：可以实现子组件与父组件数据的双向绑定，prop属性名可以自定义，非固定为valuie，本质就是:属性名和@update:属性名合写
+
+   ```js
+   <BaseDialog :visible.sync="isShow">
+   // 相当于
+   <BaseDialog :visible="isShow" @update:visible="isShow = $event">
+       
+   // 子组件
+   props: {
+       visible: Boolean
+   },
+   this.$emit('update:visible', false)
+   ```
+
+   
 
 #### el与data的两种写法
 
@@ -173,7 +191,7 @@ data有两种写法
 2. V：视图View：模板
 3. VM：视图模型ViewModel：Vue实例对象
 
-![](C:\Users\admin\Desktop\个人资料\笔记\img\Vue_1.png)
+![](img\Vue_1.png)
 
 注意：
 
@@ -210,7 +228,7 @@ Object.defineProperty(person,'age',{
 </script>
 ```
 
- ![](C:\Users\admin\Desktop\个人资料\笔记\img\Vue_2.png)
+ ![](img\Vue_2.png)
 
 vue中的数据代理：通过vm对象来代理data对象中属性的操作（读/写）
 
@@ -743,9 +761,9 @@ v-for指令
    1. 最好使用每条数据的唯一标识作为key,比如id、手机号、身份证号等唯一值
    2. 如果不存在对数据的逆序添加、逆序删除等破坏顺序操作，仅用于渲染列表用于展示，使用index作为key是没有问题的
 
-![](C:\Users\admin\Desktop\个人资料\笔记\img\Vue_3.png)
+![](img\Vue_3.png)
 
-![](C:\Users\admin\Desktop\个人资料\笔记\img\Vue_4.png)
+![](img\Vue_4.png)
 
 #### Vue监视数据的原理
 
@@ -1264,11 +1282,13 @@ https://cn.vuejs.org/v2/guide/instance.html#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F
 </body>
 ```
 
-![](C:\Users\admin\Desktop\个人资料\笔记\img\Vue_5.png)
+![](img\Vue_5.png)
 
-![](C:\Users\admin\Desktop\个人资料\笔记\img\Vue_6.png)
+![](img\Vue_6.png)
 
 **vm的一生（vm的生命周期）**
+
+创建、挂载、更新、销毁
 
 ​                将要创建 ===> 调用beforeCreate函数
 
@@ -1370,8 +1390,8 @@ https://cn.vuejs.org/v2/guide/instance.html#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F
 
 **如何注册组件？**
 
-1. 局部注册：靠new Vue的时候传入components选项
-2. 全局注册：靠Vue.component('组件名',组件)
+1. 局部注册：使用的组件内导入，并局部注册components:{组件名,组件}
+2. 全局注册：main.js内导入，并全局注册Vue.component(组件名,组件)
 
 **编写组件标签**
 
@@ -1615,7 +1635,7 @@ https://cn.vuejs.org/v2/guide/instance.html#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F
 
 2. 为什么要有这个关系？让组件实例对象（vc）可以访问到Vue原型上的属性、方法
 
-![](C:\Users\admin\Desktop\个人资料\笔记\img\Vue_7.png)
+![](img\Vue_7.png)
 
 #### 单文件组件
 
@@ -1776,6 +1796,8 @@ new Vue({
 
 #### ref属性
 
+利用ref和$refs可以获取dom元素或组件实例，查找范围当前组件内（更精确稳定）
+
 1. 被用来给元素或子组件注册引用信息（id的替代者）
 
 2. 应用在html标签上获取的是真实DOM元素，应用在组件标签上是组件实例对象（vc）
@@ -1816,6 +1838,61 @@ export default {
 </script>
 ```
 
+#### 组件通信
+
+父子关系
+
++ props：父组件通过props将数据传递给子组件
+
++ $emit：子组件利用$emit通知父组件修改更新
+
+非父子关系
+
+1. provide & inject：跨层级共享数据
+
+   ```js
+   // 父组件provide提供数据
+   export default {
+   	provide() {
+           return {
+               // 普通类型【非响应式】
+               color: this.color
+               // 复杂类型【响应式】
+               userInfo: this.userInfo
+           }
+       }
+   }
+   
+   // 子/孙组件inject取值使用
+   export default {
+       inject: ['color', 'userInfo'],
+       created() {
+           console.log(this.color, this.userInfo)
+       }
+   }
+   ```
+
+2. eventbus：非父子组件之间，进行简易消息通信
+
+   ```js
+   // 创建一个都能访问到的事件总线（空Vue实例）-> utils/EventBus.js
+   import Vue from 'Vue'
+   const Bus = new Vue()
+   export default Bus
+   
+   // A组件（接收方），监听Bus实例的事件
+   created() {
+       Bus.$on('sendMsg', (msg) => {
+           this.msg = msg
+       })
+   }
+   
+   // B组件（发送方），触发Bus实例的事件
+   Bus.$emit('sendMsg', '这是一个消息')
+   ```
+
+通用解决方案Vuex
+
 #### props配置
 
 功能：让组件接收外部传过来的数据
@@ -1854,7 +1931,7 @@ export default {
 
      }
 
-备注：props是只读的，Vue底层会监测你对props的修改，如果进行了修改，就会发出警			告，若业务需求确实需要修改，那么请复制props的内容到data中一份，然后去修			改data中的数据
+备注：props是只读的，Vue底层会监测你对props的修改，如果进行了修改，就会发出警告，若业务需求确实需要修改，那么请复制props的内容到data中一份，然后去修改data中的数据
 
 **Student.vue**
 
@@ -2095,6 +2172,11 @@ createApp(App).use(plugins).mount('#app') //使用插件
 
 写法：< style scoped>
 
+原理：
+
+1. 给当前组件模板的所有元素，都会添加上一个自定义属性data-v-hash值区分不同的组件
+2. css选择器后面被自动处理，添加上了属性选择器
+
 #### 组件自定义事件
 
 1. 一种组件键通信的方式，适用于：子组件 ===> 父组件
@@ -2318,7 +2400,7 @@ export default {
 
 4. 最好在beforeDestroy钩子中，用$off去解绑当前组件所用到的事件
 
-![](C:\Users\admin\Desktop\个人资料\笔记\img\Vue_8.png)
+![](img\Vue_8.png)
 
 **Student.vue**
 
@@ -2533,7 +2615,7 @@ export default {
 #### nextTick
 
 1. 语法：`this.$nextTick(回调函数)`
-2. 作用：在下一次DOM更新结束后执行其指定的回调
+2. 作用：等DOM更新结束后执行其指定的回调
 3. 什么时候用：当改变数据后，要基于更新后的新DOM进行某些操作时，要在nextTick所指定的回调函数中执行
 
 #### 过度与动画
@@ -2542,7 +2624,7 @@ export default {
 
 2. 图示：
 
-   ![](C:\Users\admin\Desktop\个人资料\笔记\img\Vue_9.png)
+   ![](img\Vue_9.png)
 
 3. 写法：
 
@@ -3018,6 +3100,30 @@ export default {
 
 **作用域插槽**
 
+基本使用步骤：
+
+1. 给slot标签，以添加属性的方式传值
+
+   ```vue
+   <slot :id="item.id" msg="测试文本"></slot>
+   ```
+
+2. 所有添加的属性，都会被收集到一个对象中
+
+   ```vue
+   { id: 3, msg: '测试文本'}
+   ```
+
+3. 在template中，通过#插槽名="obj"接收，默认插槽名为default
+
+   ```vue
+   <MyTable :list="list">
+       <template #default="obj">
+   		<button @click="del(obj.id)">删除</button>
+       </template>
+   </MyTable>
+   ```
+
 **Category.vue**
 
 ```vue
@@ -3117,7 +3223,7 @@ export default {
 1. 多个组件依赖于同一状态
 2. 来自不同组件的行为需要变更同一状态
 
-![](C:\Users\admin\Desktop\个人资料\笔记\img\Vue_10.png)
+![](img\Vue_10.png)
 
 #### 搭建vuex环境
 
@@ -3238,7 +3344,7 @@ import Vuex from 'vuex'
 //应用Vuex插件
 Vue.use(Vuex)
 
-//准备actions——用于响应组件中的动作
+//准备actions——用于响应组件中的动作，执行异步操作
 const actions = {
         // jia(context, value) {
         //     context.commit('JIA', value)
@@ -3427,7 +3533,7 @@ export default new Vuex.Store({
    ```
 
 
-### vou-router
+### vue-router
 
 **vue-router：**vue的一个插件库，专门用来实现SPA应用
 
@@ -3805,6 +3911,33 @@ new Vue({
    $route.params.title
    ```
 
+#### 重定向
+
+网页打开，url默认是/路径，未匹配到组件时，会出现空白。重定向匹配path后，强制跳转path路径
+
+```js
+const router = new VueRouter({
+    routes: [
+        { path: '/', redirect: '/home'}
+    ]
+})
+```
+
+#### 404
+
+当路径找不到匹配时，给个提示页面
+
+配置在路由最后
+
+```js
+const router = new VueRouter({
+    routes: [
+        { path: '/', redirect: '/home'},
+        { path: '*', component: NotFind}
+    ]
+})
+```
+
 #### 路由的props配置
 
 作用：让路由组件更方便的收到参数
@@ -3848,7 +3981,7 @@ export default {
 </script>
 ```
 
-#### `<router-link>`的replave属性
+#### `<router-link>`的replace属性
 
 1. 作用：控制路由跳转时操作浏览器历史记录的模式
 2. 浏览器的历史记录有两种写入方式：分别为push和replace，push是追加历史记录，replace是替换当前记录。路由跳转时候默认为push
@@ -4088,3 +4221,424 @@ const router = new VueRouter({
 ```
 
 ### Vue3
+
+优势：
+
+1. 更容易维护：组合式API，更好的TypeScript支持
+2. 更快的速度：重写diff算法，模板编译优化，更高效的组件初始化
+3. 更小的体积：良好的TreeShaking，按需引入
+4. 更优的数据响应式：Proxy
+
+#### create-vue
+
+create-vue是Vue官方新的脚手架工具，底层切换到了vite（下一代构建工具），为开发提供极速响应
+
+前提环境条件：已安装16.0或更高版本的Node.js
+
+创建一个Vue应用：
+
+npm init vue@latest，这一指令将会安装并执行create-vue
+
+关键文件：
+
+1. vite.config.js：项目的配置文件，基于vite的配置
+2. package.json：项目包文件，核心依赖变成了Vue3.x和vite
+3. main.js：入口文件，createApp函数创建应用实例
+4. app.vue：根组件，SFC单文件组件，script - template - style
+   1. 变化1：脚本script和模板template顺序调整
+   2. 变化2：模板template不再要求唯一元素
+   3. 变化3：脚本script添加setup标识支持组合式API
+5. index.html：单页入口，提供id为app的挂载点
+
+#### 组合式API
+
+**setup选项**
+
+setup
+
+1. 执行时机，比beforeCreate还要早
+2. setup函数中，获取不到this（this是undefined）
+3. 数据和函数需要在setup最后return才能在模板中应用
+
+```vue
+// 原始复杂写法
+<script>
+export default {
+    setup () {
+        const message = 'hello Vue3'
+        const logMessage = () => {
+            console.log(message)
+        }
+        
+        return {
+            message,
+            logMessage
+        }
+    },
+    beforeCreate () {
+        
+    }
+}
+</script>
+
+// 语法糖写法
+<script setup>
+export default {
+	const message = 'hello Vue3'
+    const logMessage = () => {
+        console.log(message)
+    }
+}
+</script>
+```
+
+**reactive()**
+
+接受对象类型数据的参数传入并返回一个响应式的对象
+
+```vue
+<script setup>
+	import { reactive } from 'vue'
+    
+    const state = reactive(对象类型数据)
+</script>
+```
+
+1. 从vue包中导入reactive函数
+2. 在< script setup> 中执行reactive函数并传入类型为对象的初始值，并使用变量接收返回值
+
+**ref()**
+
+接受简单类型或者对象类型的数据传入并返回一个响应式的对象
+
+```vue
+<script setup>
+	import { ref } from 'vue'
+    
+    const state = ref(简单类型或者对象类型的数据)
+</script>
+```
+
+**computed计算属性函数**
+
+计算属性基本思想和Vue2的完全一致，组合式API下的计算属性只是修改了写法
+
+```vue
+<script setup>
+	import { computed } from 'vue'
+    
+    const computedState = computed(() => {
+        return 基于响应式数据做计算之后的值
+    })
+</script>
+```
+
+1. 导入computed函数
+2. 执行函数在回调参数中return基于响应式数据做计算的值，用变量接收
+
+**watch函数**
+
+侦听一个或者多个数据的变化，数据变化时执行回调函数
+
+两个额外参数：1.immediate（立即执行）2.deep（深度侦听）
+
+```vue
+<script setup>
+	import { ref,watch } from 'vue'
+    
+    const count = ref(0)
+    const name = ref('cp')
+    
+    // 侦听单个数据
+    watch(count, (newValue, oldValue) => {
+        console.log(`count发生了变化，老值为${oldValue},新值为${newValue}`)
+    })
+    
+    // 侦听多个数据
+    watch([count, name], ([newCount, newName], [oldCount, oldName]) => {
+        console.log('nt或者name变化了', [newCount, newName], [oldCount, oldName])
+    })
+    
+    // immediate在侦听器创建时立即触发回调，响应式数据变化之后继续执行回调
+    watch(count, () => {
+        console.log('count发生了变化')
+    }, {
+        immediate: true
+    })
+    
+    // deep深度监视，默认watch进行的是浅层监视，监测不到复杂类型内部数据的变化
+    watch(count, () => {
+        console.log('count发生了变化')
+    }, {
+        deep: true
+    })
+    
+    // 精确侦听对象的某个属性
+    const info = ref({
+        name: 'cp',
+        age: 18
+    })
+    
+    watch(
+    () => info.value.age,
+    () => console.log('age发生变化了'))
+</script>
+```
+
+**生命周期函数**
+
+| 选项式API            | 组合式API       |
+| -------------------- | --------------- |
+| beforeCreate/created | setup           |
+| beforeMount          | onBeforeMount   |
+| mounted              | onMounted       |
+| beforeUpdate         | onBeforeUpdate  |
+| updated              | onUpdated       |
+| beforeUnmount        | onBeforeUnmount |
+| unmounted            | onUnmounted     |
+
+**组合式API下的父传子**
+
+1. 父组件中给子组件绑定属性
+2. 子组件内部通过props选项接收
+
+```vue
+// 父组件
+<script setup>
+    // 引入子组件
+    import sonComVue from './son-com.vue'
+</script>
+
+<template>
+    <!-- 绑定属性message -->
+	<sonComVue message="this is app message"/>
+</template>
+
+
+// 子组件
+<script setup>
+    // 通过defineProps编译器宏接收子组件传递的数据
+    const props = defineProps({
+        message: String
+    })
+</script>
+
+<template>
+    {{ message }}
+</template>
+```
+
+**组合式API下的子传父**
+
+1. 父组件中给子组件标签通过@绑定事件
+2. 子组件内部通过emit方法触发事件
+
+```vue
+// 父组件
+<script setup>
+    // 引入子组件
+    import sonComVue from './son-com.vue'
+    const getMessage = (msg) => {
+        console.log(msg)
+    }
+</script>
+
+<template>
+    <!-- 绑定自定义事件 -->
+	<sonComVue @get-message="getMessage"/>
+</template>
+
+
+// 子组件
+<script setup>
+    // 通过defineEmits编译器宏生成emit方法
+    const emit = defineEmits(['get-message'])
+    const sendMsg = () => {
+        // 触发自定义事件，并传递参数
+        emit('get-message', 'this is son msg')
+    }
+</script>
+
+<template>
+    <button @click="sendMsg">sendMsg</button>
+</template>
+```
+
+**模板引用**
+
+通过ref标识获取真实的dom对象或者组件实例对象
+
+```vue
+<script setup>
+    import { ref } from 'vue'
+    // 调用ref函数得到ref对象，绑定后通过h1Ref.value就能拿到dom对象
+    const h1Ref = ref(null)
+</script>
+
+<template>
+	<!-- 通过ref标识绑定ref对象 -->
+    <h1 ref="h1Ref">我是dom标签h1</h1>
+</template>
+```
+
+**defineExpose()**
+
+默认情况下在< script setup>语法糖下组件内部的属性和方法是不开放给父组件访问的，可以通过defineExpose编译宏指定哪些属性和方法允许访问
+
+```vue
+<script setup>
+    import { ref } from 'vue'
+    const testMessage = ref('this is test msg')
+    defineExpose({
+        testMessage
+    })
+</script>
+```
+
+**provide和inject**
+
+顶层组件向任意的底层组件传递数据和方法，实现跨层组件通信
+
+```vue
+// 跨层传递数据
+1.顶层组件通过provide函数提供数据
+2.底层组件通过inject函数获取数据
+
+// 顶层组件
+provide('key', 顶层组件中的数据)
+const count = ref(100)
+provide('count', count)
+provide('changeCount', (newCount) => {
+	count.value = newCount
+})
+
+// 底层组件
+const message = inject('key')
+const changeCount = inject('changeCount')
+```
+
+**vue3.3新特性-defineOptions**
+
+可以用defineOptions定义任意的选项，props、emits、expose、slots除外（因为这些可以用defineXXX来做到）
+
+```vue
+<script setup>
+	defineOptions({
+        name: 'RegeisterIndex'
+    })
+</script>
+```
+
+**vue3.3新特性-defineModel**
+
+在vue3中，自定义组件上使用v-model，相当于传递一个modelValue属性，同时触发update:modelValue事件
+
+```vue
+<script>
+	import { defineModel } from 'vue'
+    const modelValue = defineModel()
+</script>
+
+<template>
+	<div>
+        <input type="text" :value="modelValue" @input="e => modelValue = e.target.value">
+    </div>
+</template>
+```
+
+#### Pinia
+
+Pinia是Vue最新的状态管理工具，是Vuex的替代品
+
+1. 提供更加简单的API（去掉了mutation）
+2. 提供符合组合式风格的API（和Vue3新语法统一）
+3. 去掉了modules的概念，每一个store都是一个独立的模块
+4. 配合TypeScript更加友好，提供可靠的类型推断
+
+创建：
+
+1. 使用Vite创建一个空的Vue3项目
+
+   npm create vue@latest
+
+2. 按照官方文档安装Pinia到项目中
+
+```js
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import App from './App.vue'
+const pinia = createPinia()
+const app = createApp(App);
+app.use(pinia).mount('#app')
+```
+
+**定义store**
+
+```js
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+
+// 在 setup store中，ref()就是state，computed()就是getters，function()就是actions
+export const userCounterStore = defineStore('counter', () => {
+	count count = ref(0)
+    function increment() {
+        count.value++
+    }
+    
+    const double = computed(() => count.value * 2)
+    return { count, increment, double }
+})
+```
+
+**action异步实现**
+
+异步action函数的写法和组件中获取异步数据的写法完全一致
+
+```js
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import axios from 'axios'
+
+export const useChannelStore = defineStore('channel', () => {
+    const channelList = ref([])
+    const getList = async () => {
+        // 支持异步
+        const { data: { data }} = await axios.get('url')
+        channelList.value = data.channels
+    }
+    
+    return {
+        channelList,
+        getList
+    }
+})
+```
+
+**Pinia持久化插件**
+
+1. 安装插件 pinia-plugin-persistedstate
+
+   npm i pinia-plugin-persistedstate
+
+2. main.js使用
+
+   import persist from 'pinia-plugin-persistedstate'
+
+   app.use(createPinia().use(persist))
+
+3. store仓库中，persist:true开启
+
+```js
+import { defineStore } from 'pinia'
+
+export const useStore = defineStore('main', () => {
+    const someState = ref('你好 pinia')
+    
+    return {
+        someState
+    }
+}, {
+    persist: true
+})
+```
+

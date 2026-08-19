@@ -2238,15 +2238,20 @@ hash算法是一种将任意长度的数据通过一个算法，变成固定长�
 
 ### 排序算法
 
+https://cloud.tencent.com/developer/article/1524766?policyId=1004
+
 | 算法 | 最好     | 最坏     | 平均     | 空间     | 稳定 | 思想 | 注意事项                                                     |
 | ---- | -------- | -------- | -------- | -------- | ---- | ---- | ------------------------------------------------------------ |
 | 冒泡 | O(n)     | O(n²)    | O(n²)    | O(1)     | Y    | 比较 | 最好情况需额外判断                                           |
 | 选择 | O(n²)    | O(n²)    | O(n²)    | O(1)     | N    | 比较 | 顺序选择元素，交换次数较多，不适合大规模数据                 |
-| 堆   | O(nlogn) | O(nlogn) | O(nlogn) | O(1)     | N    | 选择 | 堆排序的辅助性较强，理解先前理解的堆的数据结构               |
 | 插入 | O(n)     | O(n²)    | O(n²)    | O(1)     | Y    | 比较 | 插入排序对于近乎有序的数据处理速度比较快，复杂度有所降低，可以提前结束 |
 | 希尔 | O(nlogn) | O(n²)    | O(nlogn) | O(1)     | N    | 插入 | gap序列的构造有多种方式，不同方式处理的数据复杂度可能不同    |
 | 归并 | O(nlogn) | O(nlogn) | O(nlogn) | O(n)     | Y    | 归并 | 需要额外的O(n)的存储空间                                     |
-| 快速 | O(nlogn) | O(n²)    | O(nlogn) | O(nlogn) | N    | 分治 | 快排可能存在最坏的情况，需要把枢轴值选取得尽量随机化来缓解最坏情况下的时间复杂度 |
+| 快速 | O(nlogn) | O(n²)    | O(nlogn) | O(logn)  | N    | 分治 | 快排可能存在最坏的情况，需要把枢轴值选取得尽量随机化来缓解最坏情况下的时间复杂度 |
+| 堆   | O(nlogn) | O(nlogn) | O(nlogn) | O(1)     | N    | 选择 | 堆排序的辅助性较强，理解先前理解的堆的数据结构               |
+| 计数 | O(n + k) | O(n + k) | O(n + k) | O(k)     | Y    |      |                                                              |
+| 桶   | O(n + k) | O(n²)    | O(n + k) | O(n + k) | Y    |      |                                                              |
+| 基数 | O(nk)    | O(nk)    | O(nk)    | O(n + k) | Y    |      |                                                              |
 
 #### 冒泡排序
 
@@ -2300,59 +2305,9 @@ public void selectionSort(int[] a) {
         if(max != i) {
             int temp = a[i];
         	a[i] = a[max];
-        	a[max] = temp;  
+        	a[max] = temp;
         }
     }
-}
-```
-
-#### 堆排序
-
-+ 建立大顶堆
-+ 每次将堆顶元素（最大值）交换到末尾，调整堆顶元素，让它重新符合大顶堆特性
-
-```java
-public void heapSort(int[] a) {
-    heapify(a, a.length);
-    for(int right = a.length - 1; right > 0; right--) {
-        swap(a, 0, right);
-        down(a, 0, right);
-    }
-}
-
-// 建堆
-public void heapify(int[] array, int size) {
-    // 找到最后一个非叶子节点 size / 2 - 1
-    for(int i = size / 2 - 1; i >= 0; i--) {
-        down(array, i, size);
-    }
-}
-
-// 下潜
-public void down(int[] array, int parent, int size) {
-    while(true) {
-        int left = parent * 2 + 1;
-        int right = left + 1;
-        int max = parent;
-        if(left < size && array[left] > array[max]) {
-            max = left;
-        }
-        if(right < size && array[right] > array[max]) {
-            max = right;
-        }
-        if(max == parent) { // 没找到更大的孩子
-            break;
-        }
-        swap(array, max, parent);
-        parent = max;
-    }
-}
-
-// 交换
-public void swap(int[] array, int i, int j) {
-    int t = array[i];
-    array[i] = array[j];
-    array[j] = t;
 }
 ```
 
@@ -2413,7 +2368,7 @@ public void shellSort(int[] a) {
 // 自顶至下
 public void mergeSort(int[] a1) {
     int[] a2 = new int[a1.length];
-    split(a1, 0, a.length - 1, a2);
+    split(a1, 0, a1.length - 1, a2);
 }
 
 public void split(int[] a1, int left, int right, int[] a2) {
@@ -2535,7 +2490,6 @@ public int partition(int[] a, int left, int right) {
             }
             i++;
         }
-        i++;
         j++;
     }
     swap(a, i, right);
@@ -2627,6 +2581,56 @@ public int partition(int[] a, int left, int right) {
     }
     swap(a, j, left);
     return j;
+}
+```
+
+#### 堆排序
+
++ 建立大顶堆
++ 每次将堆顶元素（最大值）交换到末尾，调整堆顶元素，让它重新符合大顶堆特性
+
+```java
+public void heapSort(int[] a) {
+    heapify(a, a.length);
+    for(int right = a.length - 1; right > 0; right--) {
+        swap(a, 0, right);
+        down(a, 0, right);
+    }
+}
+
+// 建堆
+public void heapify(int[] array, int size) {
+    // 找到最后一个非叶子节点 size / 2 - 1
+    for(int i = size / 2 - 1; i >= 0; i--) {
+        down(array, i, size);
+    }
+}
+
+// 下潜
+public void down(int[] array, int parent, int size) {
+    while(true) {
+        int left = parent * 2 + 1;
+        int right = left + 1;
+        int max = parent;
+        if(left < size && array[left] > array[max]) {
+            max = left;
+        }
+        if(right < size && array[right] > array[max]) {
+            max = right;
+        }
+        if(max == parent) { // 没找到更大的孩子
+            break;
+        }
+        swap(array, max, parent);
+        parent = max;
+    }
+}
+
+// 交换
+public void swap(int[] array, int i, int j) {
+    int t = array[i];
+    array[i] = array[j];
+    array[j] = t;
 }
 ```
 

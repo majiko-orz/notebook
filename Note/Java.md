@@ -534,7 +534,7 @@ StringBuilder：可变的字符序列、线程不安全、效率高、底层使�
 
 
 
-**Coparable接口的使用（自然排序）**
+**Comparable接口的使用（自然排序）**
 
 1. 像String、包装类等实现了Comparable接口，重写了compareTo(obj)方法，给出了比较两个对象大小的方式
 
